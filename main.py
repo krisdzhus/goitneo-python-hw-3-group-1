@@ -1,6 +1,9 @@
 from collections import UserDict
 from datetime import datetime, timedelta
 
+class PhoneValidationError(Exception):
+    pass
+
 class Field:
     def __init__(self, value):
         self.value = value
@@ -14,7 +17,7 @@ class Name(Field):
 class Phone(Field):
     def __init__(self, value):
         if not value.isdigit() or len(value) != 10:
-            raise ValueError("Please enter a valid number.")
+            raise PhoneValidationError("Please enter a valid number.")
         super().__init__(value)
 
 class Birthday(Field):
@@ -75,7 +78,8 @@ class AddressBook(UserDict):
         birthday_dict = {}
         for name, record in self.data.items():
             if record.birthday:
-                birthday_this_year = record.birthday.value.replace(year=today.year)
+                birthday = datetime.strptime(record.birthday.value, '%d.%m.%Y').date()
+                birthday_this_year = birthday.replace(year=today.year)
                 if birthday_this_year < today:
                     birthday_this_year = record.birthday.value.replace(year=today.year + 1)
                 if next_monday <= birthday_this_year < end_of_next_week:
@@ -91,6 +95,8 @@ def input_error(func):
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
+        except PhoneValidationError as e:
+            return str(e)
         except ValueError as v:
             return f"Give me name and phone please."
         except KeyError as k:
